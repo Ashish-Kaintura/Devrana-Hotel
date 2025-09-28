@@ -31,6 +31,7 @@ export default function Home() {
       <WhatsAppSticky/>
       <CallSticky />
       <Franchise/>
+      
     </div>
   )
 }

@@ -25,42 +25,113 @@
 //     const rzp = new window.Razorpay(options);
 //     rzp.open();
 // };
-import { saveBooking } from "./storage";
-export function openRazorpay(amount, formData, room, onSuccess) {
-    const options = {
-        key: "rzp_test_1234567890", // replace with your Razorpay test key
-        amount: amount * 100,
-        currency: "INR",
-        name: "Devrana Hotel",
-        description: "Room Booking Payment",
-        image: "https://i.postimg.cc/X7r2sfB2/DR-LOGO.png",
-        handler: function (response) {
-            const newBooking = {
-                bookingId: `BKG${Date.now()}`,
-                customer: formData,
-                room: room.name,
-                checkIn: formData.checkIn,
-                checkOut: formData.checkOut,
-                guests: formData.guests,
-                amount: amount,
-                paymentStatus: "Success",
-                razorpayId: response.razorpay_payment_id,
-            };
 
-            console.log("Booking saved:", newBooking);
-            // ✅ Save in mock DB (localStorage)
-            saveBooking(newBooking);
-            onSuccess(newBooking); // callback to redirect
-        },
-        prefill: {
-            name: formData.name,
-            email: formData.email,
-            contact: formData.phone,
-        },
-        theme: { color: "#A12C28" },
-    };
+// for loacl 
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
+// import { saveBooking } from "./storage";
+// export function openRazorpay(amount, formData, room, onSuccess) {
+//     const options = {
+//         key: "rzp_test_1234567890", // replace with your Razorpay test key
+//         amount: amount * 100,
+//         currency: "INR",
+//         name: "Devrana Hotel",
+//         description: "Room Booking Payment",
+//         image: "https://i.postimg.cc/X7r2sfB2/DR-LOGO.png",
+//         handler: function (response) {
+//             const newBooking = {
+//                 bookingId: `BKG${Date.now()}`,
+//                 customer: formData,
+//                 room: room.name,
+//                 checkIn: formData.checkIn,
+//                 checkOut: formData.checkOut,
+//                 guests: formData.guests,
+//                 amount: amount,
+//                 paymentStatus: "Success",
+//                 razorpayId: response.razorpay_payment_id,
+//             };
+
+//             console.log("Booking saved:", newBooking);
+//             // ✅ Save in mock DB (localStorage)
+//             saveBooking(newBooking);
+//             onSuccess(newBooking); // callback to redirect
+//         },
+//         prefill: {
+//             name: formData.name,
+//             email: formData.email,
+//             contact: formData.phone,
+//         },
+//         theme: { color: "#A12C28" },
+//     };
+
+//     const rzp = new window.Razorpay(options);
+//     rzp.open();
+// }
+
+import axios from "axios";
+
+export async function openRazorpay(amount, formData, room, onSuccess) {
+    try {
+        // 1️⃣ Create order on backend
+        const { data: order } = await axios.post(
+            "http://localhost:5000/api/payments/create-order",
+            { amount }
+        );
+
+        // 2️⃣ Razorpay options
+        const options = {
+            key: import.meta.env.VITE_RAZORPAY_KEY_ID, // test key only needed for checkout, can also send from backend
+            amount: order.amount,
+            currency: order.currency,
+            name: "Devrana Hotel",
+            description: `Booking ${room.name}`,
+            image: "https://i.postimg.cc/X7r2sfB2/DR-LOGO.png",
+            order_id: order.id,
+            prefill: {
+                name: formData.name,
+                email: formData.email,
+                contact: formData.phone,
+            },
+            theme: { color: "#A12C28" },
+            handler: async function (response) {
+                // 3️⃣ Verify payment on backend
+                const verifyRes = await axios.post(
+                    "http://localhost:5000/api/payments/verify-payment",
+                    {
+                        razorpay_order_id: response.razorpay_order_id,
+                        razorpay_payment_id: response.razorpay_payment_id,
+                        razorpay_signature: response.razorpay_signature,
+                    }
+                );
+
+                if (verifyRes.data.success) {
+                    // ✅ Payment verified, save booking in localStorage for now
+                    const newBooking = {
+                        bookingId: `BKG${Date.now()}`,
+                        customer: formData,
+                        room: room.name,
+                        checkIn: formData.checkIn,
+                        checkOut: formData.checkOut,
+                        guests: formData.guests,
+                        amount: order.amount / 100, // in rupees
+                        paymentStatus: "Success",
+                        razorpayId: response.razorpay_payment_id,
+                    };
+                    onSuccess(newBooking);
+                } else {
+                    alert("Payment verification failed!");
+                }
+            },
+            modal: {
+                ondismiss: function () {
+                    alert("Payment cancelled.");
+                },
+            },
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+    } catch (error) {
+        console.error("Payment error:", error);
+        alert("Payment failed. Check console for details.");
+    }
 }
-

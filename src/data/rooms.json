@@ -48,6 +48,13 @@
         "price": 3500,
         "img": "https://i.postimg.cc/qMqcBGJ1/Duluex-Room.jpg",
         "description": "Spacious room with king-size bed, balcony view, and complimentary breakfast.",
+        "images": [
+            "/luxary/new-luxary-image-01.jpg",
+            "/luxary/new-luxary-image-02.jpg",
+            "/luxary/new-luxary-image-03.jpg",
+            "/luxary/new-luxary-image-04.jpg",
+            "/luxary/new-luxary-image-05.jpg"
+        ],
         "amenities": [
             "Free WiFi",
             "Breakfast",
