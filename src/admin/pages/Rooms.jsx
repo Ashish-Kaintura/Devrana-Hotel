@@ -152,6 +152,14 @@ export default function AdminRooms() {
                                 }
                                 className="border px-3 py-2 rounded w-full"
                             />
+                            <textarea
+
+                                value={editRoom.description}
+                                onChange={(e) =>
+                                    setEditRoom({ ...editRoom, description: e.target.value })
+                                }
+                                className="border px-3 py-2 rounded w-full"
+                            />
                             <input
                                 type="number"
                                 value={editRoom.guests}
